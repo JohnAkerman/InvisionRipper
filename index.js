@@ -1,16 +1,53 @@
 const puppeteer = require('puppeteer');
 const chalk = require('chalk');
 
+const argv = require('yargs')
+    .usage('Usage: <url> [options]')
+    .help('h')
+    .option('url', {
+        alias: 'u',
+        default: 'https://projects.invisionapp.com/share/57IICR3YUGP',
+        description: 'URL to InvisionApp album',
+        type: 'string'
+    })
+    .option('format', {
+        default: 'png',
+        choices: ['jpeg', 'png'],
+        description: 'File format to save screenshots',
+    })
+    .option('output', {
+		alias: 'o',
+		default: 'screenshots',
+		description: 'Folder location to save screenshots',
+        type: 'string'
+	})
+    .option('stats', {
+        alias: 's',
+        default: false,
+        description: 'Whether to show detailed statistics about album',
+        type: 'boolean'
+    })
+    .option('export', {
+        alias: 'e',
+        default: false,
+        description: 'Whether to export and download images',
+        type: 'boolean'
+    })
+    .example('$0 -stats true -o ETX -u https://projects.invisionapp.com/share/57IICR3YUGP')
+    .argv;
+
 (async() => {
 
     try {
         const browser = await puppeteer.launch( { timeout: 5000 });
         const page = await browser.newPage();
 
-        const url  = 'https://projects.invisionapp.com/share/57IICR3YUGP#/';
+        const url  = argv.url;
 
-        console.log('Loading page...');
+        if (typeof url === "undefined" || url === null || url === "")
+            throw 'No URL of album provided';
 
+        console.log(chalk.grey(`Loading album: ${url}`));
         await page.goto(url, { waitUntil: 'networkidle2'});
 
         const result = await page.evaluate(
@@ -22,15 +59,24 @@ const chalk = require('chalk');
 
         const parsedData = await parseData(result);
 
-        displayStats(parsedData.stats, parsedData.screenData);
+        if (argv.stats)
+            displayStats(parsedData.stats, parsedData.screenData);
+
+        // if (argv.images)
+        //     exportImages(parsedData);
 
         await page.close();
         await browser.close();
 
     } catch (e) {
-        console.log("Ripper Error", e);
+        console.log("Ripper Error:", e);
+        return false;
     }
 })();
+
+const exportImages = async (data) => {
+
+};
 
 
 const parseData = async (screens) => {
