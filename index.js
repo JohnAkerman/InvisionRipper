@@ -1,5 +1,8 @@
 const puppeteer = require('puppeteer');
 const chalk = require('chalk');
+const fs = require('fs-extra');
+const path = require('path');
+const request = require('request');
 
 const argv = require('yargs')
     .usage('Usage: <url> [options]')
@@ -15,8 +18,8 @@ const argv = require('yargs')
         choices: ['jpeg', 'png'],
         description: 'File format to save screenshots',
     })
-    .option('output', {
-		alias: 'o',
+    .option('images', {
+		alias: 'img',
 		default: 'screenshots',
 		description: 'Folder location to save screenshots',
         type: 'string'
@@ -57,13 +60,15 @@ const argv = require('yargs')
         if (typeof result === "undefined" || result == null)
             throw "Could not extract screen data from page";
 
+        console.log(chalk.grey(`Parsing album data`));
+
         const parsedData = await parseData(result);
 
         if (argv.stats)
             displayStats(parsedData.stats, parsedData.screenData);
 
-        // if (argv.images)
-        //     exportImages(parsedData);
+        if (argv.images)
+            exportImages(parsedData);
 
         await page.close();
         await browser.close();
@@ -75,12 +80,46 @@ const argv = require('yargs')
 })();
 
 const exportImages = async (data) => {
+    var DEBUG_MAX = 5;
+    var DEBUG_COUNT = 0;
 
+    for (let i = 0; i < data.screenData.length; i++) {
+        DEBUG_COUNT++;
+        if (DEBUG_COUNT >= DEBUG_MAX) {
+            break;
+        }
+
+        await downloadFile(data.screenData[i].url, data.screenData[i].name + '.jpg');
+    }
 };
 
+const downloadFile = async (url, filename) => {
+    let datedFolder =  await displayDate();
+
+    await request({ url, 'encoding': null }, (err, res, body) => {
+        if (err)
+            throw "Download Error: " + err;
+
+        console.log(chalk.green(`Downloading ${filename}`));
+
+        let folderName = argv.images + '/' + datedFolder;
+
+        if (res.statusCode === 200 || res.statusCode === 201 && body) {
+            fs.ensureDirSync(folderName)
+            fs.writeFile(folderName + '/' + path.basename(filename), body, 'binary', (err) => {
+                if (err)
+                    throw "File Save Error: " + err;
+            })
+        }
+    });
+}
+
+const displayDate = async () => {
+    let now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
+}
 
 const parseData = async (screens) => {
-
     screens = JSON.parse(screens);
 
     if (typeof screens !== "object")
