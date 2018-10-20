@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+const chalk = require('chalk');
 
 (async() => {
 
@@ -21,7 +22,7 @@ const puppeteer = require('puppeteer');
 
         const parsedData = await parseData(result);
 
-        console.log(parsedData.stats);
+        displayStats(parsedData.stats, parsedData.screenData);
 
         await page.close();
         await browser.close();
@@ -48,7 +49,9 @@ const parseData = async (screens) => {
         lastUpdates: [],
         imgUrls: [],
         archivedCount: 0,
-        mobileCount: 0
+        mobileCount: 0,
+        versionCount: 0,
+        versionDates: []
     }
 
     screens.forEach(function(item) {
@@ -67,13 +70,14 @@ const parseData = async (screens) => {
             'width': item.width,
             'isMobile': item.config.isMobile,
             'isArchived': item.isArchived
-
         };
+
+        screenData.push(obj);
 
         // Store global stats
         stats.count++;
 
-        if (stats.authors.indexOf(item.updatedByUserName) === 0)
+        if (stats.authors.indexOf(item.updatedByUserName) === -1)
             stats.authors.push(item.updatedByUserName);
 
         stats.commentCount += item.commentCount;
@@ -81,12 +85,27 @@ const parseData = async (screens) => {
         stats.imgUrls.push(item.imageUrl);
         stats.archivedCount += (item.isArchived ? 1 : 0);
         stats.mobileCount += (item.config.isMobile ? 1 : 0);
+        stats.versionCount += item.imageVersion;
+    });
 
-        screenData.push(obj);
+    screenData.sort((a, b) => {
+        return new Date(b.updated) - new Date(a.updated);
     });
 
     return {
         stats,
         screenData
     };
-}
+};
+
+const displayStats = async (stats, screenData) => {
+    console.log(chalk.grey('Stats'));
+    console.log(chalk.grey('====='));
+    console.log(chalk.grey(`${stats.count} Screens`));
+    console.log(chalk.grey(`${stats.mobileCount} Mobile`));
+    console.log(chalk.grey(`${stats.commentCount} Comments`));
+    console.log(chalk.grey(`${stats.archivedCount} Archived`));
+    console.log(chalk.grey(`${stats.versionCount} Versions`));
+    console.log(chalk.grey(`Authors: ${stats.authors.join()}`));
+    console.log(chalk.grey(`Last Update: ${screenData[0].updatedFriendly} - ${screenData[0].name}`));
+};
