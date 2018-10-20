@@ -136,7 +136,7 @@ const saveFile = async (data, filename, progressBar) => {
         if (err)
             throw "File Save Error: " + err;
 
-        progressBar.tick();
+        progressBar.tick()
     })
 };
 
