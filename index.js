@@ -3,6 +3,8 @@ const chalk = require('chalk');
 const fs = require('fs-extra');
 const path = require('path');
 const request = require('request');
+const progressBar = require('progress');
+const moment = require('moment');
 
 const argv = require('yargs')
     .usage('Usage: <url> [options]')
@@ -80,8 +82,19 @@ const argv = require('yargs')
 })();
 
 const exportImages = async (data) => {
-    var DEBUG_MAX = 5;
+    var DEBUG_MAX = 500;
     var DEBUG_COUNT = 0;
+
+    let start = new moment();
+
+    let downloadCount = 0;
+    let downloadTotal = (DEBUG_MAX < data.screenData.length) ? DEBUG_MAX : data.screenData.length;
+
+    let bar = new progressBar('  Downloading [:bar]', {
+        complete: chalk.green('='),
+        incomplete: chalk.grey(' '),
+        total: downloadTotal
+    });
 
     for (let i = 0; i < data.screenData.length; i++) {
         DEBUG_COUNT++;
@@ -89,34 +102,50 @@ const exportImages = async (data) => {
             break;
         }
 
-        await downloadFile(data.screenData[i].url, data.screenData[i].name + '.jpg');
+        const fileData = await downloadFile(data.screenData[i].url);
+        await saveFile(fileData, data.screenData[i].name + '.jpg', bar);
+
+        downloadCount++;
     }
+
+    let finished = new moment();
+    let duration = moment.duration(start.diff(finished));
+
+    console.log(`\n${chalk.grey('Downloaded')} ${chalk.blue(downloadCount)} ${chalk.grey('screens in ' + duration.humanize())}`);
 };
 
-const downloadFile = async (url, filename) => {
-    let datedFolder =  await displayDate();
+const downloadFile = async (url) => {
 
-    await request({ url, 'encoding': null }, (err, res, body) => {
-        if (err)
-            throw "Download Error: " + err;
-
-        console.log(chalk.green(`Downloading ${filename}`));
-
-        let folderName = argv.images + '/' + datedFolder;
-
-        if (res.statusCode === 200 || res.statusCode === 201 && body) {
-            fs.ensureDirSync(folderName)
-            fs.writeFile(folderName + '/' + path.basename(filename), body, 'binary', (err) => {
-                if (err)
-                    throw "File Save Error: " + err;
-            })
-        }
+    return new Promise( (resolve, reject) => {
+        request({ url, 'encoding': null }, (err, res, body) => {
+            if (res.statusCode === 200 || res.statusCode === 201 && body) {
+                resolve(body);
+            } else {
+                reject(err);
+            }
+        });
     });
-}
+};
+
+const saveFile = async (data, filename, progressBar) => {
+    let datedFolder = await displayDate();
+    let folderName = argv.images + '/' + datedFolder;
+
+    await fs.ensureDir(folderName)
+    await fs.outputFile(folderName + '/' + path.basename(filename), data, 'binary', (err) => {
+        if (err)
+            throw "File Save Error: " + err;
+
+        progressBar.tick();
+    })
+};
+
+
+// Format YYYY-mm-dd-hh-mm-ss
 
 const displayDate = async () => {
     let now = new Date();
-    return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
+    return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}--${now.getHours()}-${now.getMinutes()}`;
 }
 
 const parseData = async (screens) => {
@@ -184,13 +213,15 @@ const parseData = async (screens) => {
 };
 
 const displayStats = async (stats, screenData) => {
+    console.log('');
     console.log(chalk.grey('Stats'));
-    console.log(chalk.grey('====='));
+    console.log(chalk.grey('-----'));
     console.log(chalk.grey(`${stats.count} Screens`));
     console.log(chalk.grey(`${stats.mobileCount} Mobile`));
     console.log(chalk.grey(`${stats.commentCount} Comments`));
     console.log(chalk.grey(`${stats.archivedCount} Archived`));
     console.log(chalk.grey(`${stats.versionCount} Versions`));
     console.log(chalk.grey(`Authors: ${stats.authors.join()}`));
-    console.log(chalk.grey(`Last Update: ${screenData[0].updatedFriendly} - ${screenData[0].name}`));
+    console.log(chalk.grey(`Last updated ${moment(screenData[0].updatedAt).fromNow()} - ${screenData[0].name}`));
+    console.log('');
 };
