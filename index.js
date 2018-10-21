@@ -61,14 +61,21 @@ const main = async () => {
     const browser = await puppeteer.launch({ timeout: 5000 })
     const page = await browser.newPage()
     const url = argv.url
+    let result = null
 
-    if (typeof url === 'undefined' || url === null || url === '') throw new Error('No URL of album provided')
+    if (await checkUrl(url) === false) return false
 
     if (!argv.silent) console.log(chalk.grey(`Loading album: ${url}`))
 
-    await page.goto(url, { waitUntil: 'networkidle2' })
-
-    const result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2' })
+      result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
+    } catch (err) {
+      console.log(chalk.red('This album link is no longer valid.'))
+      await page.close()
+      await browser.close()
+      return false
+    }
 
     if (typeof result === 'undefined' || result == null) throw new Error('Could not extract screen data from page')
 
@@ -89,11 +96,22 @@ const main = async () => {
     await page.close()
     await browser.close()
   } catch (err) {
-    console.log('Ripper Error:', err)
-    return false
+    console.log('InvisionRipper', err)
   }
 }
 main()
+
+const checkUrl = async (url) => {
+  if (typeof url === 'undefined' || url === null || url === '') {
+    console.log(chalk.red('No URL provided'))
+    return false
+  }
+
+  if (url.indexOf('projects.invisionapp.com/share/') === -1) {
+    console.log(chalk.red('URL not recognised, only invision links are supported'))
+    return false
+  }
+}
 
 const exportImages = async ({ screenData }) => {
   let start = new Moment()
