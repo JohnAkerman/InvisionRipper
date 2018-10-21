@@ -38,6 +38,11 @@ const argv = require('yargs')
         description: 'Whether to export and download images',
         type: 'boolean'
     })
+    .option('report', {
+        alias: 'r',
+        description: 'Report file name',
+        type: 'string'
+    })
     .example('$0 --stats --export -u <url>')
     .argv;
 
@@ -65,29 +70,32 @@ const argv = require('yargs')
         const parsedData = await parseData(result);
 
         if (argv.stats)
-            displayStats(parsedData.stats, parsedData.screenData);
+            displayStats(parsedData);
 
         if (argv.export)
             exportImages(parsedData);
 
-        if (!argv.stats && !argv.export) {
+        if (argv.report)
+            exportReport(parsedData);
+
+        if (!argv.stats && !argv.export && !argv.report) {
             console.log(chalk.yellow('No command provided, exiting'));
         }
 
         await page.close();
         await browser.close();
 
-    } catch (e) {
-        console.log("Ripper Error:", e);
+    } catch (err) {
+        console.log("Ripper Error:", err);
         return false;
     }
 })();
 
-const exportImages = async (data) => {
+const exportImages = async ({screenData}) => {
     let start = new moment();
 
     let downloadCount = 0;
-    let downloadTotal = data.screenData.length;
+    let downloadTotal = screenData.length;
 
     let progressBar = new ProgressBar(chalk.yellow('Downloading') + ' [:bar] :percent', {
         complete: chalk.green('='),
@@ -95,7 +103,7 @@ const exportImages = async (data) => {
         total: downloadTotal
     });
 
-    let screens = data.screenData;
+    let screens = screenData;
 
     const downloadQueue = screens.map(async screen => {
         const imageData = await downloadFile(screen.url);
@@ -205,7 +213,7 @@ const parseData = async (screens) => {
     };
 };
 
-const displayStats = async (stats, screenData) => {
+const displayStats = async ({stats, screenData}) => {
     console.log('');
     console.log(chalk.grey('Stats'));
     console.log(chalk.grey('-----'));
@@ -218,3 +226,34 @@ const displayStats = async (stats, screenData) => {
     console.log(chalk.grey(`Last updated ${moment(screenData[0].updated).fromNow()} - ${screenData[0].name}`));
     console.log('');
 };
+
+const exportReport = async ({stats, screenData}) => {
+    if (!argv.report) return;
+
+    let datedFolder = await displayDate();
+    let folderName = 'data';
+
+    if (argv.title) folderName += '/' + argv.title;
+
+    folderName += '/' + datedFolder;
+
+    // Clean unwanted items from save data
+    delete stats.lastUpdates;
+    delete stats.imgUrls;
+
+    for (var screen of screenData) {
+        delete screen.url;
+        delete screen.createdFriendly;
+        delete screen.updatedFriendly;
+    }
+
+    try {
+        await fs.ensureDir(folderName)
+        await fs.writeJson(`${folderName }/${argv.report}.json`, {
+            stats,
+            screenData
+        });
+
+        console.log(chalk.green(`Report data saved to ${folderName}/${argv.report}.json`));
+    } catch (err) { console.log(err) }
+}
