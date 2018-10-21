@@ -12,7 +12,6 @@ const argv = require('yargs')
     .alias('help', 'h')
     .option('url', {
         alias: 'u',
-        default: 'https://projects.invisionapp.com/share/57IICR3YUGP',
         description: 'URL to InvisionApp album',
         type: 'string'
     })
@@ -39,7 +38,7 @@ const argv = require('yargs')
         description: 'Whether to export and download images',
         type: 'boolean'
     })
-    .example('$0 -stats true -o ETX -u https://projects.invisionapp.com/share/57IICR3YUGP')
+    .example('$0 --stats --export -u <url>')
     .argv;
 
 (async() => {
