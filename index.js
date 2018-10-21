@@ -58,6 +58,8 @@ const argv = require('yargs')
   })
   .example('$0 --stats --export -u <url>').argv
 
+const Url = require('./src/url.js')
+
 const main = async () => {
   try {
     const browser = await puppeteer.launch({ timeout: 5000 })
@@ -65,7 +67,11 @@ const main = async () => {
     const url = argv.url
     let result = null
 
-    if (await checkUrl(url) === false) return false
+    const urlCheck = await Url.checkUrl(url)
+    if (urlCheck !== true) {
+      console.log(chalk.red(urlCheck))
+      return false
+    }
 
     if (!argv.silent) console.log(chalk.grey(`Loading album: ${url}`))
 
@@ -103,24 +109,6 @@ const main = async () => {
   }
 }
 main()
-
-const checkUrl = async (url) => {
-  // Example Links
-  // https://invis.io/NQ8979O8R
-  // https://projects.invisionapp.com/share/2B7ZYDVZ
-  // https://in.invisionapp.com/share/X28MGQD4Y
-  if (typeof url === 'undefined' || url === null || url === '') {
-    console.log(chalk.red('No URL provided'))
-    return false
-  }
-
-  if (url.indexOf('projects.invisionapp.com/share/') === -1 &&
-  url.indexOf('invis.io/') === -1 &&
-  url.indexOf('in.invisionapp.com/share/') === -1) {
-    console.log(chalk.red('URL not recognised, only invision links are supported'))
-    return false
-  }
-}
 
 const exportImages = async ({ screenData }) => {
   let start = new Moment()
