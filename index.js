@@ -32,7 +32,7 @@ const argv = require('yargs')
   .option('report', {
     alias: 'r',
     default: 'report',
-    description: 'The filename of the extrated report file. JSON file extended not needed',
+    description: 'The filename of the extracted report file. JSON file extended not needed',
     type: 'string'
   })
   .option('stats', {
@@ -53,7 +53,7 @@ const argv = require('yargs')
   })
   .option('silent', {
     default: false,
-    description: 'Show minimal logging in the console',
+    description: 'Whether to show minimal logging in the console',
     type: 'boolean'
   })
   .example('$0 --stats --export -u <url>').argv
