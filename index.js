@@ -58,9 +58,7 @@ const argv = require('yargs')
 
 const main = async () => {
   try {
-    const browser = await puppeteer.launch({
-      timeout: 5000
-    })
+    const browser = await puppeteer.launch({ timeout: 5000 })
     const page = await browser.newPage()
     const url = argv.url
 
@@ -68,9 +66,7 @@ const main = async () => {
 
     if (!argv.silent) console.log(chalk.grey(`Loading album: ${url}`))
 
-    await page.goto(url, {
-      waitUntil: 'networkidle2'
-    })
+    await page.goto(url, { waitUntil: 'networkidle2' })
 
     const result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
 
@@ -79,11 +75,8 @@ const main = async () => {
     const parsedData = await parseData(result)
 
     if (argv.stats) displayStats(parsedData)
-
     if (argv.export) exportImages(parsedData)
-
     if (argv.report) exportReport(parsedData)
-
     if (argv.lastUpdate) getLastUpdate(parsedData)
 
     if (!argv.stats &&
@@ -102,9 +95,7 @@ const main = async () => {
 }
 main()
 
-const exportImages = async ({
-  screenData
-}) => {
+const exportImages = async ({ screenData }) => {
   let start = new Moment()
   let downloadCount = 0
   let downloadTotal = screenData.length
@@ -227,10 +218,7 @@ const parseData = async (screens) => {
   }
 }
 
-const displayStats = async ({
-  stats,
-  screenData
-}) => {
+const displayStats = async ({ stats, screenData }) => {
   console.log('')
   console.log(chalk.grey('Stats'))
   console.log(chalk.grey('-----'))
@@ -244,16 +232,11 @@ const displayStats = async ({
   console.log('')
 }
 
-const getLastUpdate = async ({
-  screenData
-}) => {
+const getLastUpdate = async ({ screenData }) => {
   console.log(chalk.grey(`Last update was ${Moment(screenData[0].updated).fromNow()} by ${screenData[0].updatedby} on ${screenData[0].name}`))
 }
 
-const exportReport = async ({
-  stats,
-  screenData
-}) => {
+const exportReport = async ({ stats, screenData }) => {
   if (!argv.report) return
 
   let datedFolder = await displayDate()
