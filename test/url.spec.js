@@ -24,6 +24,10 @@ describe('#checkUrl()', () => {
   })
 
   it('should be an invalid url', async () => {
-    assert(Url.checkUrl('https://www.google.com'), true)
+    assert(Url.checkUrl('https://www.google.com'), 'URL not recognised, only invision links are supported')
+  })
+
+  it('should be an invalid url that contains numbers', async () => {
+    assert(Url.checkUrl(123), 'URL not recognised, only invision links are supported')
   })
 })

@@ -4,7 +4,7 @@
 // https://in.invisionapp.com/share/X28MGQD4Y
 
 const checkUrl = async (url) => {
-  if (typeof url === 'undefined' || url === null || url === '') {
+  if (typeof url === 'undefined' || url === null || url === '' || typeof url !== 'string') {
     return 'No URL provided'
   }
 
