@@ -47,6 +47,11 @@ const argv = require('yargs')
         description: 'Get the last updated screen with stats',
         type: 'boolean'
     })
+    .option('silent', {
+        default: false,
+        description: 'Show minimal logging in the console',
+        type: 'boolean'
+    })
     .example('$0 --stats --export -u <url>')
     .argv;
 
@@ -61,7 +66,9 @@ const argv = require('yargs')
         if (typeof url === "undefined" || url === null || url === "")
             throw 'No URL of album provided';
 
-        console.log(chalk.grey(`Loading album: ${url}`));
+        if (!argv.silent)
+            console.log(chalk.grey(`Loading album: ${url}`));
+
         await page.goto(url, { waitUntil: 'networkidle2'});
 
         const result = await page.evaluate( () => JSON.stringify(InvScreenViewer.store.screens));
@@ -125,7 +132,8 @@ const exportImages = async ({screenData}) => {
     let finished = new moment();
     let duration = moment.duration(finished.diff(start));
 
-    console.log(`\n${chalk.grey('Downloaded')} ${chalk.blue(downloadCount)} ${chalk.grey('screens in ' + duration.humanize())}`);
+    if (!argv.silent)
+        console.log(`\n${chalk.grey('Downloaded')} ${chalk.blue(downloadCount)} ${chalk.grey('screens in ' + duration.humanize())}`);
 };
 
 const downloadFile = async (url) => {
@@ -164,7 +172,8 @@ const parseData = async (screens) => {
 
     if (typeof screens !== "object") throw "Issue with screen object";
 
-    console.log(chalk.grey(`Album found, parsing data`));
+    if (!argv.silent)
+        console.log(chalk.grey(`Album found, parsing data`));
 
     var screenData = [];
     var stats = {
@@ -266,6 +275,7 @@ const exportReport = async ({stats, screenData}) => {
             screenData
         });
 
-        console.log(chalk.green(`Report data saved to ${folderName}/${argv.report}.json`));
+        if (!argv.silent)
+            console.log(chalk.green(`Report data saved to ${folderName}/${argv.report}.json`));
     } catch (err) { console.log(err) }
 }
