@@ -8,22 +8,23 @@ const moment = require('moment');
 
 const argv = require('yargs')
     .usage('Usage: <url> [options]')
-    .help('h')
+    .help('help')
+    .alias('help', 'h')
     .option('url', {
         alias: 'u',
         default: 'https://projects.invisionapp.com/share/57IICR3YUGP',
         description: 'URL to InvisionApp album',
         type: 'string'
     })
-    .option('format', {
-        default: 'png',
-        choices: ['jpeg', 'png'],
-        description: 'File format to save screenshots',
+    .option('title', {
+        alias: 't',
+        description: 'Project title used as a top level export folder',
+        type: 'string'
     })
     .option('images', {
-		alias: 'img',
-		default: 'screenshots',
-		description: 'Folder location to save screenshots',
+		alias: 'i',
+		default: 'images',
+		description: 'Folder location to save images',
         type: 'string'
 	})
     .option('stats', {
@@ -67,8 +68,12 @@ const argv = require('yargs')
         if (argv.stats)
             displayStats(parsedData.stats, parsedData.screenData);
 
-        if (argv.images)
+        if (argv.export)
             exportImages(parsedData);
+
+        if (!argv.stats && !argv.export) {
+            console.log(chalk.yellow('No command provided, exiting'));
+        }
 
         await page.close();
         await browser.close();
@@ -123,12 +128,15 @@ const downloadFile = async (url) => {
 
 const saveFile = async (data, filename) => {
     let datedFolder = await displayDate();
-    let folderName = argv.images + '/' + datedFolder;
+    let folderName = argv.images
+
+    if (argv.title) folderName += '/' + argv.title;
+
+    folderName += '/' + datedFolder;
 
     await fs.ensureDir(folderName)
     await fs.outputFile(folderName + '/' + path.basename(filename) + '.jpg', data, 'binary', (err) => {
-        if (err)
-            throw "File Save Error: " + err;
+        if (err) throw "File Save Error: " + err;
     });
 };
 
@@ -142,8 +150,7 @@ const displayDate = async () => {
 const parseData = async (screens) => {
     screens = JSON.parse(screens);
 
-    if (typeof screens !== "object")
-        throw "Issue with screen object";
+    if (typeof screens !== "object") throw "Issue with screen object";
 
     var screenData = [];
     var stats = {
@@ -182,8 +189,7 @@ const parseData = async (screens) => {
         // Store global stats
         stats.count++;
 
-        if (stats.authors.indexOf(item.updatedByUserName) === -1)
-            stats.authors.push(item.updatedByUserName);
+        if (stats.authors.indexOf(item.updatedByUserName) === -1) stats.authors.push(item.updatedByUserName);
 
         stats.commentCount += item.commentCount;
         stats.lastUpdates.push(item.updatedAt);
