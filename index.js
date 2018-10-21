@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const fs = require('fs-extra');
 const path = require('path');
 const request = require('request');
-const progressBar = require('progress');
+const ProgressBar = require('progress');
 const moment = require('moment');
 
 const argv = require('yargs')
@@ -82,34 +82,30 @@ const argv = require('yargs')
 })();
 
 const exportImages = async (data) => {
-    var DEBUG_MAX = 500;
-    var DEBUG_COUNT = 0;
-
     let start = new moment();
 
     let downloadCount = 0;
-    let downloadTotal = (DEBUG_MAX < data.screenData.length) ? DEBUG_MAX : data.screenData.length;
+    let downloadTotal = data.screenData.length;
 
-    let bar = new progressBar('  Downloading [:bar]', {
+    let progressBar = new ProgressBar('  Downloading [:bar]', {
         complete: chalk.green('='),
         incomplete: chalk.grey(' '),
         total: downloadTotal
     });
 
-    for (let i = 0; i < data.screenData.length; i++) {
-        DEBUG_COUNT++;
-        if (DEBUG_COUNT >= DEBUG_MAX) {
-            break;
-        }
+    let screens = data.screenData;
 
-        const fileData = await downloadFile(data.screenData[i].url);
-        await saveFile(fileData, data.screenData[i].name + '.jpg', bar);
-
+    const downloadQueue = screens.map(async screen => {
+        const imageData = await downloadFile(screen.url);
+        await saveFile(imageData, screen.name);
+        progressBar.tick();
         downloadCount++;
-    }
+    });
+
+    await Promise.all(downloadQueue);
 
     let finished = new moment();
-    let duration = moment.duration(start.diff(finished));
+    let duration = moment.duration(finished.diff(start));
 
     console.log(`\n${chalk.grey('Downloaded')} ${chalk.blue(downloadCount)} ${chalk.grey('screens in ' + duration.humanize())}`);
 };
@@ -127,22 +123,19 @@ const downloadFile = async (url) => {
     });
 };
 
-const saveFile = async (data, filename, progressBar) => {
+const saveFile = async (data, filename) => {
     let datedFolder = await displayDate();
     let folderName = argv.images + '/' + datedFolder;
 
     await fs.ensureDir(folderName)
-    await fs.outputFile(folderName + '/' + path.basename(filename), data, 'binary', (err) => {
+    await fs.outputFile(folderName + '/' + path.basename(filename) + '.jpg', data, 'binary', (err) => {
         if (err)
             throw "File Save Error: " + err;
-
-        progressBar.tick()
-    })
+    });
 };
 
 
 // Format YYYY-mm-dd-hh-mm-ss
-
 const displayDate = async () => {
     let now = new Date();
     return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}--${now.getHours()}-${now.getMinutes()}`;
