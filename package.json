@@ -7,8 +7,17 @@
     "test": "standard",
     "precommit": "standard"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "John Akerman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JohnAkerman/InvisionRipper.git"
+  },
+  "homepage": "https://github.com/JohnAkerman/InvisionRipper",
+  "keywords": [
+    "invision",
+    "ripper"
+  ],
+  "license": "MIT",
   "dependencies": {
     "chalk": "^2.4.1",
     "fs-extra": "^7.0.0",
