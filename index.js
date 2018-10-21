@@ -43,6 +43,10 @@ const argv = require('yargs')
         description: 'Report file name',
         type: 'string'
     })
+    .option('lastUpdate', {
+        description: 'Get the last updated screen with stats',
+        type: 'boolean'
+    })
     .example('$0 --stats --export -u <url>')
     .argv;
 
@@ -65,8 +69,6 @@ const argv = require('yargs')
         if (typeof result === "undefined" || result == null)
             throw "Could not extract screen data from page";
 
-        console.log(chalk.grey(`Parsing album data`));
-
         const parsedData = await parseData(result);
 
         if (argv.stats)
@@ -78,7 +80,13 @@ const argv = require('yargs')
         if (argv.report)
             exportReport(parsedData);
 
-        if (!argv.stats && !argv.export && !argv.report) {
+        if (argv.lastUpdate)
+            getLastUpdate(parsedData);
+
+        if (!argv.stats &&
+            !argv.export &&
+            !argv.report &&
+            !argv.lastUpdate) {
             console.log(chalk.yellow('No command provided, exiting'));
         }
 
@@ -156,18 +164,18 @@ const parseData = async (screens) => {
 
     if (typeof screens !== "object") throw "Issue with screen object";
 
+    console.log(chalk.grey(`Album found, parsing data`));
+
     var screenData = [];
     var stats = {
         count: 0,
         authors: [],
         commentCount: 0,
-        projectIds: [],
         lastUpdates: [],
         imgUrls: [],
         archivedCount: 0,
         mobileCount: 0,
-        versionCount: 0,
-        versionDates: []
+        versionCount: 0
     }
 
     screens.forEach(function(item) {
@@ -225,6 +233,10 @@ const displayStats = async ({stats, screenData}) => {
     console.log(chalk.grey(`Authors: ${stats.authors.join()}`));
     console.log(chalk.grey(`Last updated ${moment(screenData[0].updated).fromNow()} - ${screenData[0].name}`));
     console.log('');
+};
+
+const getLastUpdate = async({screenData}) => {
+    console.log(chalk.grey(`Last update was ${moment(screenData[0].updated).fromNow()} by ${screenData[0].updatedby} on ${screenData[0].name}`));
 };
 
 const exportReport = async ({stats, screenData}) => {
