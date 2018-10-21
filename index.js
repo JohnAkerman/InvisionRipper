@@ -19,7 +19,8 @@ const argv = require('yargs')
   })
   .option('title', {
     alias: 't',
-    description: 'Project title used as a top level export folder',
+    default: 'data',
+    description: 'Name given to the top level export folder',
     type: 'string'
   })
   .option('images', {
@@ -28,22 +29,23 @@ const argv = require('yargs')
     description: 'Folder location to save images',
     type: 'string'
   })
+  .option('report', {
+    alias: 'r',
+    default: 'report',
+    description: 'The filename of the extrated report file. JSON file extended not needed',
+    type: 'string'
+  })
   .option('stats', {
     alias: 's',
     default: false,
     description: 'Whether to show detailed statistics about album',
     type: 'boolean'
   })
-  .option('export', {
-    alias: 'e',
+  .option('dated', {
+    alias: 'd',
     default: false,
-    description: 'Whether to export and download images',
+    description: 'Whether the exported files should be saved in a dated subfolder. Format: YYYY-MM-DD--HH-mm',
     type: 'boolean'
-  })
-  .option('report', {
-    alias: 'r',
-    description: 'Report file name',
-    type: 'string'
   })
   .option('lastUpdate', {
     description: 'Get the last updated screen with stats',
@@ -69,6 +71,7 @@ const main = async () => {
 
     try {
       await page.goto(url, { waitUntil: 'networkidle2' })
+      await page.waitFor(5000)
       result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
     } catch (err) {
       console.log(chalk.red('This album link is no longer valid.'))
@@ -82,12 +85,12 @@ const main = async () => {
     const parsedData = await parseData(result)
 
     if (argv.stats) displayStats(parsedData)
-    if (argv.export) exportImages(parsedData)
-    if (argv.report) exportReport(parsedData)
     if (argv.lastUpdate) getLastUpdate(parsedData)
+    if (argv.images) exportImages(parsedData)
+    if (argv.report) exportReport(parsedData)
 
     if (!argv.stats &&
-    !argv.export &&
+    !argv.images &&
     !argv.report &&
     !argv.lastUpdate) {
       console.log(chalk.yellow('No command provided, exiting'))
@@ -102,12 +105,18 @@ const main = async () => {
 main()
 
 const checkUrl = async (url) => {
+  // Example Links
+  // https://invis.io/NQ8979O8R
+  // https://projects.invisionapp.com/share/2B7ZYDVZ
+  // https://in.invisionapp.com/share/X28MGQD4Y
   if (typeof url === 'undefined' || url === null || url === '') {
     console.log(chalk.red('No URL provided'))
     return false
   }
 
-  if (url.indexOf('projects.invisionapp.com/share/') === -1) {
+  if (url.indexOf('projects.invisionapp.com/share/') === -1 &&
+  url.indexOf('invis.io/') === -1 &&
+  url.indexOf('in.invisionapp.com/share/') === -1) {
     console.log(chalk.red('URL not recognised, only invision links are supported'))
     return false
   }
@@ -158,11 +167,10 @@ const downloadFile = async (url) => {
 
 const saveFile = async (data, filename) => {
   let datedFolder = await displayDate()
-  let folderName = argv.images
+  let folderName = 'data'
 
   if (argv.title) folderName += '/' + argv.title
-
-  folderName += '/' + datedFolder
+  if (argv.dated) folderName += '/' + datedFolder
 
   await fs.ensureDir(folderName)
   await fs.outputFile(folderName + '/' + path.basename(filename) + '.jpg', data, 'binary', (err) => {
@@ -261,8 +269,7 @@ const exportReport = async ({ stats, screenData }) => {
   let folderName = 'data'
 
   if (argv.title) folderName += '/' + argv.title
-
-  folderName += '/' + datedFolder
+  if (argv.dated) folderName += '/' + datedFolder
 
   // Clean unwanted items from save data
   delete stats.lastUpdates
