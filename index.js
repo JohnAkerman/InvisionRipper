@@ -55,9 +55,7 @@ const argv = require('yargs')
         console.log(chalk.grey(`Loading album: ${url}`));
         await page.goto(url, { waitUntil: 'networkidle2'});
 
-        const result = await page.evaluate(
-            () => JSON.stringify(InvScreenViewer.store.screens)
-        );
+        const result = await page.evaluate( () => JSON.stringify(InvScreenViewer.store.screens));
 
         if (typeof result === "undefined" || result == null)
             throw "Could not extract screen data from page";
@@ -215,6 +213,6 @@ const displayStats = async (stats, screenData) => {
     console.log(chalk.grey(`${stats.archivedCount} Archived`));
     console.log(chalk.grey(`${stats.versionCount} Versions`));
     console.log(chalk.grey(`Authors: ${stats.authors.join()}`));
-    console.log(chalk.grey(`Last updated ${moment(screenData[0].updatedAt).fromNow()} - ${screenData[0].name}`));
+    console.log(chalk.grey(`Last updated ${moment(screenData[0].updated).fromNow()} - ${screenData[0].name}`));
     console.log('');
 };
