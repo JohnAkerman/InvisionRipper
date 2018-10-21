@@ -31,7 +31,7 @@ This tool can help assist your usage of albums by performing a multitude of acti
 ## Commands
 
 Name | Alias | Type | Description | Default
---- | :---: | :---: | ---
+--- | :---: | :---: | --- | ---
 ``--title`` | `-t` | string |  Name given to the top level export folder | N/A
 ``--images`` | `-i` | string |  Name given to the top level export folder | images
 ``--report`` | `-r` | string |  The filename of the extracted report file. JSON file extended not needed | report
