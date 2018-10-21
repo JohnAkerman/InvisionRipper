@@ -90,7 +90,7 @@ const exportImages = async (data) => {
     let downloadCount = 0;
     let downloadTotal = data.screenData.length;
 
-    let progressBar = new ProgressBar('  Downloading [:bar]', {
+    let progressBar = new ProgressBar(chalk.yellow('Downloading') + ' [:bar] :percent', {
         complete: chalk.green('='),
         incomplete: chalk.grey(' '),
         total: downloadTotal
@@ -140,11 +140,8 @@ const saveFile = async (data, filename) => {
     });
 };
 
-
-// Format YYYY-mm-dd-hh-mm-ss
 const displayDate = async () => {
-    let now = new Date();
-    return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}--${now.getHours()}-${now.getMinutes()}`;
+    return moment().format('YYYY-MM-DD--HH-mm');
 }
 
 const parseData = async (screens) => {
