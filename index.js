@@ -58,9 +58,14 @@ const argv = require('yargs')
     description: 'Whether to show minimal logging in the console',
     type: 'boolean'
   })
-  .option('reportViewer', {
+  .option('reportviewer', {
     description: 'Path to report file used to show html',
     type: 'string'
+  })
+  .option('reportviewerport', {
+    default: 3000,
+    description: 'The port number to start the localhost html server for the report viewer',
+    type: 'number'
   })
   .example('$0 --stats --export -u <url>').argv
 
@@ -88,9 +93,9 @@ const loadReport = async (path) => {
 }
 
 const reportViewee = async () => {
-  if (!argv.reportViewer) return console.error('No report path provided')
+  if (!argv.reportviewer) return console.error('No report path provided')
 
-  const reportPath = argv.reportViewer
+  const reportPath = argv.reportviewer
   const reportData = await loadReport(reportPath)
 
   reportData.filename = path.basename(reportPath)
@@ -103,7 +108,8 @@ const reportViewee = async () => {
     resp.end()
   })
 
-  server.listen(3000)
+  server.listen(argv.reportviewerport)
+  console.log(`Running Report Viewer on localhost:${argv.reportviewerport}`)
 }
 
 const generateReportMarkup = async (data) => {
@@ -154,8 +160,7 @@ const main = async () => {
       if (argv.report) exportReport(parsedData)
     }
 
-    if (argv.reportViewer) {
-      console.log('running')
+    if (argv.reportviewer) {
       reportViewee()
     }
 
@@ -163,7 +168,7 @@ const main = async () => {
     !argv.images &&
     !argv.report &&
     !argv.lastUpdate &&
-    !argv.reportViewer) {
+    !argv.reportviewer) {
       console.log(chalk.yellow('No command provided, exiting'))
     }
 
