@@ -17,8 +17,11 @@ const parseData = async (screens) => {
     lastUpdates: [],
     imgUrls: [],
     archivedCount: 0,
-    mobileCount: 0,
     versionCount: 0
+  }
+
+  if (typeof screens !== 'object' || screens === null) {
+    throw new Error('Unable to locate screens from album')
   }
 
   screens.forEach(function (item) {
@@ -35,7 +38,6 @@ const parseData = async (screens) => {
       'updatedby': item.updatedByUserName,
       'height': item.height,
       'width': item.width,
-      'isMobile': item.config.isMobile,
       'isArchived': item.isArchived
     }
 
@@ -50,7 +52,6 @@ const parseData = async (screens) => {
     stats.lastUpdates.push(item.updatedAt)
     stats.imgUrls.push(item.imageUrl)
     stats.archivedCount += (item.isArchived ? 1 : 0)
-    stats.mobileCount += (item.config.isMobile ? 1 : 0)
     stats.versionCount += item.imageVersion
   })
 

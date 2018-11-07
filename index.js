@@ -147,7 +147,7 @@ const downloadFile = async (url) => {
       url,
       'encoding': null
     }, (err, res, body) => {
-      if ((res.statusCode === 200 || res.statusCode === 201) && body) {
+      if (res && (res.statusCode === 200 || res.statusCode === 201) && body) {
         resolve(body)
       } else {
         reject(err)
@@ -178,7 +178,6 @@ const displayStats = async ({ stats, screenData }) => {
   console.log(chalk.grey('Stats'))
   console.log(chalk.grey('-----'))
   console.log(chalk.grey(`${stats.count} Screens`))
-  console.log(chalk.grey(`${stats.mobileCount} Mobile`))
   console.log(chalk.grey(`${stats.commentCount} Comments`))
   console.log(chalk.grey(`${stats.archivedCount} Archived`))
   console.log(chalk.grey(`${stats.versionCount} Versions`))
