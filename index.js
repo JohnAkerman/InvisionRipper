@@ -7,6 +7,8 @@ const path = require('path')
 const request = require('request')
 const ProgressBar = require('progress')
 const Moment = require('moment')
+const http = require('http')
+const handlebars = require('handlebars')
 
 const argv = require('yargs')
   .usage('Usage: <url> [options]')
@@ -56,6 +58,10 @@ const argv = require('yargs')
     description: 'Whether to show minimal logging in the console',
     type: 'boolean'
   })
+  .option('reportViewer', {
+    description: 'Path to report file used to show html',
+    type: 'string'
+  })
   .example('$0 --stats --export -u <url>').argv
 
 global.argv = argv
@@ -63,50 +69,108 @@ global.argv = argv
 const Data = require('./src/data.js')
 const Url = require('./src/url.js')
 
+// Load report file
+// Parse screen data
+// start a local server
+// render data into html file to provide brief view
+// link to individual files from album
+// options - provide report on file or via album
+const loadReport = async (path) => {
+  let reportData = null
+
+  try {
+    reportData = await fs.readJson(path)
+    return reportData
+  } catch (err) {
+    console.error(err)
+    return null
+  }
+}
+
+const reportViewee = async () => {
+  if (!argv.reportViewer) return console.error('No report path provided')
+
+  const reportPath = argv.reportViewer
+  const reportData = await loadReport(reportPath)
+
+  const markup = await generateReportMarkup(reportData)
+
+  // Initialise server
+  let server = http.createServer(function (req, resp) {
+    resp.writeHead(200, { 'Content-Type': 'text/html' })
+    resp.write('Hello World')
+    resp.write(markup)
+    resp.end()
+  })
+
+  server.listen(3000)
+}
+
+const generateReportMarkup = async (data) => {
+  const screenStr = '{{#each screenData}}<div class=\'screen\'><h2>{{name}}</h2><h3>v{{version}}</h3></div>{{/each}}'
+  const screenTemplate = handlebars.compile(screenStr)
+  const screenMarkup = screenTemplate(data)
+
+  return screenMarkup
+}
+
 const main = async () => {
   try {
-    const browser = await puppeteer.launch({ timeout: 5000 })
-    const page = await browser.newPage()
-    const url = argv.url
-    let result = null
+    let browser = null
+    let page = null
 
-    const urlCheck = await Url.checkUrl(url)
-    if (urlCheck !== true) {
-      console.log(chalk.red(urlCheck))
-      return false
+    if (argv.url) {
+      browser = await puppeteer.launch({ timeout: 5000 })
+      page = await browser.newPage()
+      const url = argv.url
+      let result = null
+
+      const urlCheck = await Url.checkUrl(url)
+      if (urlCheck !== true) {
+        console.log(chalk.red(urlCheck))
+        return false
+      }
+
+      if (!argv.silent) console.log(chalk.grey(`Loading album: ${url}`))
+
+      try {
+        await page.goto(url, { waitUntil: 'networkidle2' })
+        await page.waitFor(5000)
+        result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
+      } catch (err) {
+        console.log(chalk.red('This album link is no longer valid.'))
+        await page.close()
+        await browser.close()
+        return false
+      }
+
+      if (typeof result === 'undefined' || result == null) throw new Error('Could not extract screen data from page')
+
+      const parsedData = await Data.parseData(result)
+
+      if (argv.stats) displayStats(parsedData)
+      if (argv.lastUpdate) getLastUpdate(parsedData)
+      if (argv.images) exportImages(parsedData)
+      if (argv.report) exportReport(parsedData)
     }
 
-    if (!argv.silent) console.log(chalk.grey(`Loading album: ${url}`))
-
-    try {
-      await page.goto(url, { waitUntil: 'networkidle2' })
-      await page.waitFor(5000)
-      result = await page.evaluate(() => JSON.stringify(InvScreenViewer.store.screens))
-    } catch (err) {
-      console.log(chalk.red('This album link is no longer valid.'))
-      await page.close()
-      await browser.close()
-      return false
+    if (argv.reportViewer) {
+      console.log('running')
+      reportViewee()
     }
-
-    if (typeof result === 'undefined' || result == null) throw new Error('Could not extract screen data from page')
-
-    const parsedData = await Data.parseData(result)
-
-    if (argv.stats) displayStats(parsedData)
-    if (argv.lastUpdate) getLastUpdate(parsedData)
-    if (argv.images) exportImages(parsedData)
-    if (argv.report) exportReport(parsedData)
 
     if (!argv.stats &&
     !argv.images &&
     !argv.report &&
-    !argv.lastUpdate) {
+    !argv.lastUpdate &&
+    !argv.reportViewer) {
       console.log(chalk.yellow('No command provided, exiting'))
     }
 
-    await page.close()
-    await browser.close()
+    if (argv.url) {
+      await page.close()
+      await browser.close()
+    }
   } catch (err) {
     console.log('InvisionRipper', err)
   }
@@ -218,6 +282,6 @@ const exportReport = async ({ stats, screenData }) => {
 
     if (!argv.silent) console.log(chalk.green(`Report data saved to ${folderName}/${argv.report}.json`))
   } catch (err) {
-    console.log(err)
+    console.error(err)
   }
 }
