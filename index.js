@@ -93,12 +93,12 @@ const reportViewee = async () => {
   const reportPath = argv.reportViewer
   const reportData = await loadReport(reportPath)
 
+  reportData.filename = path.basename(reportPath)
   const markup = await generateReportMarkup(reportData)
 
   // Initialise server
   let server = http.createServer(function (req, resp) {
     resp.writeHead(200, { 'Content-Type': 'text/html' })
-    resp.write('Hello World')
     resp.write(markup)
     resp.end()
   })
@@ -107,8 +107,8 @@ const reportViewee = async () => {
 }
 
 const generateReportMarkup = async (data) => {
-  const screenStr = '{{#each screenData}}<div class=\'screen\'><h2>{{name}}</h2><h3>v{{version}}</h3></div>{{/each}}'
-  const screenTemplate = handlebars.compile(screenStr)
+  const viewerHTML = await fs.readFile('viewer.html')
+  const screenTemplate = handlebars.compile(viewerHTML.toString())
   const screenMarkup = screenTemplate(data)
 
   return screenMarkup

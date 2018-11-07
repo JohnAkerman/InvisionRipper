@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <title>InvisionRipper Viewer</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
+    <style>
+      h1, h2, h3, h4 {
+        font-family: "Open Sans", sans-serif;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      h3 { font-size: 18px; }
+
+      .screen {
+        background-color: #efefef;
+        border: 1px solid #dedede;
+        padding: 0px 20px 25px;
+        margin-bottom: 15px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1 class="text-center">InvisionRipper Viewer</h1>
+      <p>You are viewing file <strong>{{filename}}</strong></p>
+      <p><strong>{{stats.count}}</strong> screen(s) in album with a total of <strong>{{stats.verisonCount}}</strong> total versions.</p>
+      <p>The last updated item was {{updatedlast}}</p>
+
+      <div class="screenData row">
+        {{#each screenData}}
+        <div class="col-xs-12 col-sm-6 col-sm-4">
+          <div class="screen">
+            <h2 class="screen__title">{{name}}</h2>
+            <span class="screen__version">Version {{version}}</span>
+            <span class="screen__created">Created: {{created}}</span>
+            <span class="screen__modified">Last Updated: {{updated}} by {{updatedby}}</span>
+          </div>
+        </div>
+        {{/each}} 
+      </div>
+    </div>
+  </body>
+</html>
